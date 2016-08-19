@@ -402,7 +402,7 @@ func (obj *Common) Destroy() {
 	})
 }
 
-var connectedFunction = make(map[interface{}]bool)
+var connectedFunction = make(map[*interface{}]bool)
 
 // On connects the named signal from obj with the provided function, so that
 // when obj next emits that signal, the function is called with the parameters
@@ -437,11 +437,11 @@ func (obj *Common) On(signal string, function interface{}) {
 	csignal, csignallen := util.UnsafeStringData(signal)
 	var cerr *C.error
 	RunMain(func() {
-		fold := &valueFold{gvalue: function}
+		fold := &valueFold{gvalue: &function}
 		funcref := getFoldRef(fold)
 		cerr = C.objectConnect(obj.addr, (*C.char)(csignal), C.int(csignallen), obj.engine.addr, funcref, C.int(funcv.Type().NumIn()))
 		if cerr == nil {
-			connectedFunction[function] = true
+			connectedFunction[&function] = true
 			stats.connectionsAlive(+1)
 		} else {
 
@@ -466,7 +466,7 @@ func hookSignalDisconnect(funcref C.GoValueRef) {
 	if fold == nil {
 		panic("disconnecting unknown signal function")
 	}
-	delete(connectedFunction, fold.gvalue)
+	delete(connectedFunction, fold.gvalue.(*interface{}))
 	clearFoldRef(funcref)
 	stats.connectionsAlive(-1)
 }
@@ -478,7 +478,7 @@ func hookSignalCall(enginep unsafe.Pointer, funcref C.GoValueRef, args *C.DataVa
 		panic("signal called after engine was destroyed")
 	}
 	fold := foldFromRef(funcref)
-	funcv := reflect.ValueOf(fold.gvalue)
+	funcv := reflect.ValueOf(*fold.gvalue.(*interface{}))
 	funct := funcv.Type()
 	numIn := funct.NumIn()
 	var params [C.MaxParams]reflect.Value
