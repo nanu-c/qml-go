@@ -23,7 +23,7 @@ var (
 
 	ptrSize = C.size_t(unsafe.Sizeof(uintptr(0)))
 
-	nilPtr     = unsafe.Pointer(uintptr(0))
+	nilPtr     = unsafe.Pointer(nil)
 	nilCharPtr = (*C.char)(nilPtr)
 
 	typeString     = reflect.TypeOf("")

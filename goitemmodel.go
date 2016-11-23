@@ -48,7 +48,7 @@ type goItemModel struct {
 	impl   ItemModelImpl
 }
 
-func (q *goItemModel) internal_ItemModel() *goItemModel { return q }
+func (qim *goItemModel) internal_ItemModel() *goItemModel { return qim }
 
 func NewItemModel(engine *Engine, parent Object, impl ItemModelImpl) (ItemModel, ItemModelInternal) {
 	im := mkItemModel()
@@ -212,7 +212,7 @@ func implData(qim C.GoValueRef, index uintptr, role int, ret *C.DataValue) {
 }
 
 //export implIndex
-func implIndex(qim C.GoValueRef, row int, column int, parent uintptr) uintptr {
+func implIndex(qim C.GoValueRef, row int, column int, parent uintptr) unsafe.Pointer {
 	im := foldFromRef(qim).gvalue.(*goItemModel)
 	parentMi := mkModelIndex(parent, im.common.engine)
 
@@ -221,11 +221,11 @@ func implIndex(qim C.GoValueRef, row int, column int, parent uintptr) uintptr {
 		return ret.(*qModelIndex).ptr
 	}
 
-	return 0
+	return nil
 }
 
 //export implParent
-func implParent(qim C.GoValueRef, index uintptr) uintptr {
+func implParent(qim C.GoValueRef, index uintptr) unsafe.Pointer {
 	im := foldFromRef(qim).gvalue.(*goItemModel)
 	indexMi := mkModelIndex(index, im.common.engine)
 	parentMi := im.impl.Parent(indexMi)
@@ -233,7 +233,7 @@ func implParent(qim C.GoValueRef, index uintptr) uintptr {
 		return parentMi.(*qModelIndex).ptr
 	}
 
-	return 0
+	return nil
 }
 
 //export implRowCount
