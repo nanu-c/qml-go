@@ -47,6 +47,7 @@ func NewEngine() *Engine {
 		engine.imageProviders = make(map[string]*func(imageId string, width, height int) image.Image)
 		engines[engine.addr] = engine
 		stats.enginesAlive(+1)
+		engine.On("destroyed", engine.onDestroyed)
 	})
 	return engine
 }
@@ -67,16 +68,20 @@ func (e *Engine) Destroy() {
 			if !e.destroyed {
 				e.destroyed = true
 				C.delObjectLater(e.addr)
-				if len(e.values) == 0 {
-					delete(engines, e.addr)
-				} else {
-					// The engine reference keeps those values alive.
-					// The last value destroyed will clear it.
-				}
-				stats.enginesAlive(-1)
 			}
 		})
 	}
+}
+
+func (e *Engine) onDestroyed() {
+	if len(e.values) == 0 {
+		delete(engines, e.addr)
+	} else {
+		// The engine reference keeps those values alive.
+		// The last value destroyed will clear it.
+	}
+	stats.enginesAlive(-1)
+
 }
 
 // Load loads a new component with the provided location and with the
