@@ -472,11 +472,13 @@ func hookSignalDisconnect(funcref C.GoValueRef) {
 //export hookSignalCall
 func hookSignalCall(enginep unsafe.Pointer, funcref C.GoValueRef, args *C.DataValue) {
 	engine := engines[enginep]
-	if engine == nil {
-		panic("signal called after engine was destroyed")
-	}
 	fold := foldFromRef(funcref)
 	funcv := reflect.ValueOf(*fold.gvalue.(*interface{}))
+
+	if engine == nil {
+		fmt.Println(fmt.Sprintf("signal called after engine was destroyed: %v %v", fold, runtime.FuncForPC(funcv.Pointer()).Name()))
+	}
+
 	funct := funcv.Type()
 	numIn := funct.NumIn()
 	var params [C.MaxParams]reflect.Value
