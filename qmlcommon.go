@@ -443,8 +443,6 @@ func (obj *Common) On(signal string, function interface{}) {
 		if cerr == nil {
 			connectedFunction[&function] = true
 			stats.connectionsAlive(+1)
-		} else {
-
 		}
 	})
 	cmust(cerr)

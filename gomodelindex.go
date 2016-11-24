@@ -79,7 +79,7 @@ func (i *qModelIndex) InternalPointer() uintptr {
 }
 
 func (i *qModelIndex) IsValid() bool {
-	if i == nil || uintptr(i.ptr) == 0 {
+	if i == nil || i.ptr == nil {
 		return false
 	}
 	return bool(C.modelIndexIsValid(i.ptr))
