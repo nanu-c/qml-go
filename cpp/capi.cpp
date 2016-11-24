@@ -768,6 +768,9 @@ void unpackDataValue(DataValue *value, QVariant_ *var)
     case DTObject:
         qvar->setValue(*(QObject**)(value->data));
         break;
+    case DTNil:
+        *qvar = QVariant(QMetaType::VoidStar, (void *)0);
+        break;
     case DTInvalid:
         *qvar = QVariant(QMetaType::VoidStar, (void *)0);
         break;
@@ -825,6 +828,8 @@ void packDataValue(const QVariant_ *var, DataValue *value)
     case QMetaType::VoidStar:
         value->dataType = DTUintptr;
         *(uintptr_t*)(value->data) = (uintptr_t)qvar->value<void *>();
+        if (*(uintptr_t*)(value->data) == 0)
+          value->dataType = DTNil;
         break;
     case QMetaType::Double:
         value->dataType = DTFloat64;

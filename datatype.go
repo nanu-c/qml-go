@@ -67,7 +67,7 @@ func init() {
 func packDataValue(value interface{}, dvalue *C.DataValue, engine *Engine, owner valueOwner) {
 	datap := unsafe.Pointer(&dvalue.data)
 	if value == nil {
-		dvalue.dataType = C.DTInvalid
+		dvalue.dataType = C.DTNil
 		return
 	}
 	switch value := value.(type) {
@@ -134,6 +134,8 @@ func unpackDataValue(dvalue *C.DataValue, engine *Engine) interface{} {
 	datap := unsafe.Pointer(&dvalue.data)
 	switch dvalue.dataType {
 	case C.DTUnknown:
+		return nil
+	case C.DTNil:
 		return nil
 	case C.DTString:
 		s := C.GoStringN(*(**C.char)(datap), dvalue.len)

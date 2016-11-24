@@ -39,6 +39,7 @@ void panicf(const char *format, ...);
 typedef enum {
     DTUnknown = 0, // Has an unsupported type.
     DTInvalid = 1, // Does not exist or similar.
+    DTNil     = 2,
 
     DTString  = 10,
     DTBool    = 11,
