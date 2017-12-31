@@ -98,9 +98,9 @@ func (obj *Common) Interface() interface{} {
 	var result interface{}
 	var cerr *C.error
 	RunMain(func() {
-		var fold *valueFold
-		if cerr = C.objectGoAddr(obj.addr, (*unsafe.Pointer)(unsafe.Pointer(&fold))); cerr == nil {
-			result = fold.gvalue
+		var valueref C.GoValueRef
+		if cerr = C.objectGoAddr(obj.addr, &valueref); cerr == nil {
+			result = foldFromRef(valueref).gvalue
 		}
 	})
 	cmust(cerr)
@@ -437,7 +437,9 @@ func (obj *Common) On(signal string, function interface{}) {
 	csignal, csignallen := util.UnsafeStringData(signal)
 	var cerr *C.error
 	RunMain(func() {
-		cerr = C.objectConnect(obj.addr, (*C.char)(csignal), C.int(csignallen), obj.engine.addr, unsafe.Pointer(&function), C.int(funcv.Type().NumIn()))
+		fold := &valueFold{gvalue: &function}
+		funcref := getFoldRef(fold)
+		cerr = C.objectConnect(obj.addr, (*C.char)(csignal), C.int(csignallen), obj.engine.addr, funcref, C.int(funcv.Type().NumIn()))
 		if cerr == nil {
 			connectedFunction[&function] = true
 			stats.connectionsAlive(+1)
@@ -457,22 +459,26 @@ func (obj *Common) Clear() {
 }
 
 //export hookSignalDisconnect
-func hookSignalDisconnect(funcp unsafe.Pointer) {
-	before := len(connectedFunction)
-	delete(connectedFunction, (*interface{})(funcp))
-	if before == len(connectedFunction) {
+func hookSignalDisconnect(funcref C.GoValueRef) {
+	fold := foldFromRef(funcref)
+	if fold == nil {
 		panic("disconnecting unknown signal function")
 	}
+	delete(connectedFunction, fold.gvalue.(*interface{}))
+	clearFoldRef(funcref)
 	stats.connectionsAlive(-1)
 }
 
 //export hookSignalCall
-func hookSignalCall(enginep unsafe.Pointer, funcp unsafe.Pointer, args *C.DataValue) {
+func hookSignalCall(enginep unsafe.Pointer, funcref C.GoValueRef, args *C.DataValue) {
 	engine := engines[enginep]
+	fold := foldFromRef(funcref)
+	funcv := reflect.ValueOf(*fold.gvalue.(*interface{}))
+
 	if engine == nil {
-		panic("signal called after engine was destroyed")
+		fmt.Println(fmt.Sprintf("signal called after engine was destroyed: %v %v", fold, runtime.FuncForPC(funcv.Pointer()).Name()))
 	}
-	funcv := reflect.ValueOf(*(*interface{})(funcp))
+
 	funct := funcv.Type()
 	numIn := funct.NumIn()
 	var params [C.MaxParams]reflect.Value

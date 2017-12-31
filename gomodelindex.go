@@ -12,7 +12,7 @@ import "C"
 import "unsafe"
 
 type qModelIndex struct {
-	ptr    uintptr
+	ptr    unsafe.Pointer
 	engine *Engine
 }
 
@@ -21,7 +21,7 @@ func mkModelIndex(ptr uintptr, engine *Engine) ModelIndex {
 		return nil
 	}
 	return &qModelIndex{
-		ptr:    ptr,
+		ptr:    unsafe.Pointer(ptr),
 		engine: engine,
 	}
 }
@@ -45,50 +45,50 @@ type ModelIndex interface {
 func (i *qModelIndex) internal_ModelIndex() {}
 
 func (i *qModelIndex) Child(row, col int) ModelIndex {
-	return mkModelIndex(uintptr(C.modelIndexChild(unsafe.Pointer(i.ptr), C.int(row), C.int(col))), i.engine)
+	return mkModelIndex(uintptr(C.modelIndexChild(i.ptr, C.int(row), C.int(col))), i.engine)
 }
 
 func (i *qModelIndex) Sibling(row, col int) ModelIndex {
-	return mkModelIndex(uintptr(C.modelIndexSibling(unsafe.Pointer(i.ptr), C.int(row), C.int(col))), i.engine)
+	return mkModelIndex(uintptr(C.modelIndexSibling(i.ptr, C.int(row), C.int(col))), i.engine)
 }
 
 func (i *qModelIndex) Column() int {
-	return int(C.modelIndexColumn(unsafe.Pointer(i.ptr)))
+	return int(C.modelIndexColumn(i.ptr))
 }
 
 func (i *qModelIndex) Row() int {
-	return int(C.modelIndexRow(unsafe.Pointer(i.ptr)))
+	return int(C.modelIndexRow(i.ptr))
 }
 
 func (i *qModelIndex) Data(role Role) interface{} {
 	var dvalue C.DataValue
-	C.modelIndexData(unsafe.Pointer(i.ptr), C.int(role), &dvalue)
+	C.modelIndexData(i.ptr, C.int(role), &dvalue)
 	return unpackDataValue(&dvalue, i.engine)
 }
 
 func (i *qModelIndex) Flags() ItemFlags {
-	return ItemFlags(C.modelIndexFlags(unsafe.Pointer(i.ptr)))
+	return ItemFlags(C.modelIndexFlags(i.ptr))
 }
 
 func (i *qModelIndex) InternalId() uintptr {
-	return uintptr(C.modelIndexInternalId(unsafe.Pointer(i.ptr)))
+	return uintptr(C.modelIndexInternalId(i.ptr))
 }
 
 func (i *qModelIndex) InternalPointer() uintptr {
-	return uintptr(C.modelIndexInternalPointer(unsafe.Pointer(i.ptr)))
+	return uintptr(C.modelIndexInternalPointer(i.ptr))
 }
 
 func (i *qModelIndex) IsValid() bool {
-	if i == nil || i.ptr == 0 {
+	if i == nil || i.ptr == nil {
 		return false
 	}
-	return bool(C.modelIndexIsValid(unsafe.Pointer(i.ptr)))
+	return bool(C.modelIndexIsValid(i.ptr))
 }
 
 func (i *qModelIndex) Model() ItemModel {
-	return itemModelFromCPP(uintptr(C.modelIndexModel(unsafe.Pointer(i.ptr))), i.engine)
+	return itemModelFromCPP(uintptr(C.modelIndexModel(i.ptr)), i.engine)
 }
 
 func (i *qModelIndex) Parent() ModelIndex {
-	return mkModelIndex(uintptr(C.modelIndexParent(unsafe.Pointer(i.ptr))), i.engine)
+	return mkModelIndex(uintptr(C.modelIndexParent(i.ptr)), i.engine)
 }

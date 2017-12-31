@@ -23,7 +23,7 @@ var (
 
 	ptrSize = C.size_t(unsafe.Sizeof(uintptr(0)))
 
-	nilPtr     = unsafe.Pointer(uintptr(0))
+	nilPtr     = unsafe.Pointer(nil)
 	nilCharPtr = (*C.char)(nilPtr)
 
 	typeString     = reflect.TypeOf("")
@@ -67,7 +67,7 @@ func init() {
 func packDataValue(value interface{}, dvalue *C.DataValue, engine *Engine, owner valueOwner) {
 	datap := unsafe.Pointer(&dvalue.data)
 	if value == nil {
-		dvalue.dataType = C.DTInvalid
+		dvalue.dataType = C.DTNil
 		return
 	}
 	switch value := value.(type) {
@@ -135,6 +135,8 @@ func unpackDataValue(dvalue *C.DataValue, engine *Engine) interface{} {
 	switch dvalue.dataType {
 	case C.DTUnknown:
 		return nil
+	case C.DTNil:
+		return nil
 	case C.DTString:
 		s := C.GoStringN(*(**C.char)(datap), dvalue.len)
 		// TODO If we move all unpackDataValue calls to the GUI thread,
@@ -163,8 +165,8 @@ func unpackDataValue(dvalue *C.DataValue, engine *Engine) interface{} {
 	case C.DTGoAddr:
 		// ObjectByName also does this fold conversion, to have access
 		// to the cvalue. Perhaps the fold should be returned.
-		fold := (*(**valueFold)(datap))
-		ensureEngine(engine.addr, unsafe.Pointer(fold))
+		foldref := (*(*C.GoValueRef)(datap))
+		fold := ensureEngine(engine.addr, foldref)
 		return fold.gvalue
 	case C.DTInvalid:
 		return nil
