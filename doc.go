@@ -177,7 +177,7 @@
 // a Paint method such as:
 //
 //    func (p *Person) Paint(painter *qml.Painter) {
-//            // ... OpenGL calls with the github.com/limetext/qml-go/gl/<VERSION> package ...
+//            // ... OpenGL calls with the github.com/nanu-c/qml-go/gl/<VERSION> package ...
 //    }
 //
 // A simple example is available at:
@@ -190,7 +190,7 @@
 // Resource files (qml code, images, etc) may be packed into the Go qml application
 // binary to simplify its handling and distribution. This is done with the genqrc tool:
 //
-//   http://github.com/limetext/qml-go/cmd/genqrc#usage
+//   http://github.com/nanu-c/qml-go/cmd/genqrc#usage
 //
 // The following blog post provides more details:
 //

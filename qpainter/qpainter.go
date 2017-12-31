@@ -13,7 +13,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/limetext/qml-go/gl/glbase"
+	"github.com/nanu-c/qml-go/gl/glbase"
 )
 
 type RenderHint C.enum_RenderHint

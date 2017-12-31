@@ -13,7 +13,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/limetext/qml-go"
+	"github.com/nanu-c/qml-go"
 )
 
 func NewTestType(engine *qml.Engine) qml.Object {

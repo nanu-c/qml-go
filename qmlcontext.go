@@ -6,7 +6,7 @@ package qml
 //
 import "C"
 import (
-	"github.com/limetext/qml-go/internal/util"
+	"github.com/nanu-c/qml-go/tools/util"
 )
 
 // Context represents a QML context that can hold variables visible

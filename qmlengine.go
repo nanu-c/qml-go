@@ -18,7 +18,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/limetext/qml-go/internal/util"
+	"github.com/nanu-c/qml-go/tools/util"
 )
 
 // Engine provides an environment for instantiating QML components.

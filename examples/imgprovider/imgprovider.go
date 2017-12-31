@@ -6,7 +6,7 @@ import (
 	"image/png"
 	"os"
 
-	"github.com/limetext/qml-go"
+	"github.com/nanu-c/qml-go"
 )
 
 func main() {

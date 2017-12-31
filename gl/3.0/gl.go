@@ -17,7 +17,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/limetext/qml-go/gl/glbase"
+	"github.com/nanu-c/qml-go/gl/glbase"
 )
 
 // API returns a value that offers methods matching the OpenGL version 3.0 API.

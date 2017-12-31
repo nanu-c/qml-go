@@ -13,7 +13,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/limetext/qml-go/internal/util"
+	"github.com/nanu-c/qml-go/tools/util"
 )
 
 // Common implements the common behavior of all QML objects.

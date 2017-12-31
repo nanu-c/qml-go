@@ -20,9 +20,9 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/limetext/qml-go/cdata"
-	"github.com/limetext/qml-go/internal/util"
-	"github.com/limetext/qml-go/qpainter"
+	"github.com/nanu-c/qml-go/cdata"
+	"github.com/nanu-c/qml-go/qpainter"
+	"github.com/nanu-c/qml-go/tools/util"
 )
 
 type mainThreadFunc struct {

@@ -17,10 +17,10 @@ import (
 
 	"path/filepath"
 
-	"github.com/limetext/qml-go"
-	"github.com/limetext/qml-go/cpptest"
-	"github.com/limetext/qml-go/gl/2.0"
-	"github.com/limetext/qml-go/qpainter"
+	"github.com/nanu-c/qml-go"
+	"github.com/nanu-c/qml-go/cpptest"
+	"github.com/nanu-c/qml-go/gl/2.0"
+	"github.com/nanu-c/qml-go/qpainter"
 	. "gopkg.in/check.v1"
 )
 

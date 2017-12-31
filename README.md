@@ -4,7 +4,7 @@ Documentation
 -------------
 
 The introductory documentation as well as the detailed API documentation is
-available at [github.com/limetext/qml-go](http://godoc.org/github.com/limetext/qml-go).
+available at [github.com/nanu-c/qml-go](http://godoc.org/github.com/nanu-c/qml-go).
 
 
 Blog posts
@@ -51,7 +51,7 @@ See below for more details about getting these requirements installed in differe
 
 After the requirements are satisfied, _go get_ should work as usual:
 
-    go get github.com/limetext/qml-go
+    go get github.com/nanu-c/qml-go
 
 
 Requirements on Ubuntu
@@ -72,7 +72,7 @@ and Go >= 1.2 may be installed using [godeb](http://blog.labix.org/2013/06/15/in
     godeb
     $ sudo mv godeb /usr/local/bin
     $ godeb install
-    $ go get github.com/limetext/qml-go
+    $ go get github.com/nanu-c/qml-go
 
 
 Requirements on Ubuntu Touch
@@ -123,7 +123,7 @@ Then, force brew to "link" qt5 (this makes it available under /usr/local):
 
 And finally, fetch and install go-qml:
 
-    $ go get github.com/limetext/qml-go
+    $ go get github.com/nanu-c/qml-go
 
 
 Requirements on Windows
@@ -143,7 +143,7 @@ Then, assuming Qt was installed under `C:\Qt5.1.1\`, set up the following enviro
 
 After reopening the shell for the environment changes to take effect, this should work:
 
-    go get github.com/limetext/qml-go
+    go get github.com/nanu-c/qml-go
 
 
 Requirements everywhere else

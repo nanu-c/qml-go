@@ -13,8 +13,8 @@ import (
 	"unicode"
 	"unsafe"
 
-	"github.com/limetext/qml-go/internal/util"
-	"github.com/limetext/qml-go/qpainter"
+	"github.com/nanu-c/qml-go/tools/util"
+	"github.com/nanu-c/qml-go/qpainter"
 )
 
 var (
