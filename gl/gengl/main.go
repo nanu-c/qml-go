@@ -1151,7 +1151,7 @@ var tmplGo = `
 
 package GL
 
-// #cgo CXXFLAGS: -std=c++0x -pedantic-errors -Wall -fno-strict-aliasing
+// #cgo CXXFLAGS: -std=c++0x  -Wall -fno-strict-aliasing
 // #cgo LDFLAGS: -lstdc++
 {{if eq $.GLVersionName "ES2"}}// #cgo !darwin LDFLAGS: -lGL
 // #cgo  darwin LDFLAGS: -framework OpenGL

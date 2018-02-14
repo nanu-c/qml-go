@@ -11,6 +11,7 @@ import (
 	"image/color"
 	"os"
 	"reflect"
+	"runtime"
 	"unsafe"
 
 	"github.com/nanu-c/qml-go/tools/util"

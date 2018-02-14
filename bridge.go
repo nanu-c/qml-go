@@ -1,7 +1,7 @@
 package qml
 
 // #cgo CPPFLAGS: -I./cpp
-// #cgo CXXFLAGS: -std=c++0x -pedantic-errors -Wall -fno-strict-aliasing
+// #cgo CXXFLAGS: -std=c++0x -Wall -fno-strict-aliasing
 // #cgo LDFLAGS: -lstdc++
 // #cgo pkg-config: Qt5Core Qt5Widgets Qt5Quick
 //
@@ -82,9 +82,9 @@ func RunArgs(args []string, f func() error) error {
 	}
 	argv[argc] = nil
 
-	argvP := unsafe.Pointer(&argv[0])
+	// argvP := unsafe.Pointer(&argv[0])
 
-	C.newGuiApplication(C.int(argc), argvP)
+	C.newGuiApplication(C.int(argc), &argv[0])
 	C.idleTimerInit((*C.int32_t)(&guiIdleRun))
 	done := make(chan error, 1)
 	go func() {
@@ -246,6 +246,7 @@ func hookIdleTimer() {
 			}
 		}
 		// fmt.Fprintf(os.Stderr, "hookIdleTimer: %v\n", runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name())
+		// fmt.Fprintf(os.Stderr, "hookIdleTimer: %v\n", reflect.ValueOf(f))
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
