@@ -6,7 +6,6 @@ import (
 
 	"github.com/nanu-c/qml-go"
 	"github.com/nanu-c/qml-go/gl/2.0"
-	"github.com/nanu-c/qml-go/qpainter"
 )
 
 func main() {
@@ -20,7 +19,7 @@ type GoRect struct {
 	qml.Object
 }
 
-func (r *GoRect) Paint(obj qml.Object, p *qpainter.Painter) {
+func (r *GoRect) Paint(p *qml.Painter) {
 	gl := GL.API(p)
 
 	width := float32(r.Int("width"))

@@ -12,9 +12,6 @@ import (
 	"strings"
 	"unicode"
 	"unsafe"
-
-	"github.com/nanu-c/qml-go/tools/util"
-	"github.com/nanu-c/qml-go/qpainter"
 )
 
 var (
@@ -23,7 +20,7 @@ var (
 
 	ptrSize = C.size_t(unsafe.Sizeof(uintptr(0)))
 
-	nilPtr     = unsafe.Pointer(nil)
+	nilPtr     = unsafe.Pointer(uintptr(0))
 	nilCharPtr = (*C.char)(nilPtr)
 
 	typeString     = reflect.TypeOf("")
@@ -37,7 +34,7 @@ var (
 	typeRGBA       = reflect.TypeOf(color.RGBA{})
 	typeObjSlice   = reflect.TypeOf([]Object(nil))
 	typeObject     = reflect.TypeOf([]Object(nil)).Elem()
-	typePainter    = reflect.TypeOf(&qpainter.Painter{})
+	typePainter    = reflect.TypeOf(&Painter{})
 	typeList       = reflect.TypeOf(&List{})
 	typeMap        = reflect.TypeOf(&Map{})
 	typeGenericMap = reflect.TypeOf(map[string]interface{}(nil))
@@ -67,15 +64,15 @@ func init() {
 func packDataValue(value interface{}, dvalue *C.DataValue, engine *Engine, owner valueOwner) {
 	datap := unsafe.Pointer(&dvalue.data)
 	if value == nil {
-		dvalue.dataType = C.DTNil
+		dvalue.dataType = C.DTInvalid
 		return
 	}
 	switch value := value.(type) {
 	case string:
 		dvalue.dataType = C.DTString
-		cstr, cstrlen := util.UnsafeStringData(value)
-		*(**C.char)(datap) = (*C.char)(cstr)
-		dvalue.len = C.int(cstrlen)
+		cstr, cstrlen := unsafeStringData(value)
+		*(**C.char)(datap) = cstr
+		dvalue.len = cstrlen
 	case bool:
 		dvalue.dataType = C.DTBool
 		*(*bool)(datap) = value
@@ -105,9 +102,6 @@ func packDataValue(value interface{}, dvalue *C.DataValue, engine *Engine, owner
 	case float32:
 		dvalue.dataType = C.DTFloat32
 		*(*float32)(datap) = value
-	case ItemModel:
-		dvalue.dataType = C.DTItemModel
-		*(*unsafe.Pointer)(datap) = value.internal_ItemModel().common.addr
 	case *Common:
 		dvalue.dataType = C.DTObject
 		*(*unsafe.Pointer)(datap) = value.addr
@@ -133,10 +127,6 @@ func packDataValue(value interface{}, dvalue *C.DataValue, engine *Engine, owner
 func unpackDataValue(dvalue *C.DataValue, engine *Engine) interface{} {
 	datap := unsafe.Pointer(&dvalue.data)
 	switch dvalue.dataType {
-	case C.DTUnknown:
-		return nil
-	case C.DTNil:
-		return nil
 	case C.DTString:
 		s := C.GoStringN(*(**C.char)(datap), dvalue.len)
 		// TODO If we move all unpackDataValue calls to the GUI thread,
@@ -165,14 +155,16 @@ func unpackDataValue(dvalue *C.DataValue, engine *Engine) interface{} {
 	case C.DTGoAddr:
 		// ObjectByName also does this fold conversion, to have access
 		// to the cvalue. Perhaps the fold should be returned.
-		foldref := (*(*C.GoValueRef)(datap))
-		fold := ensureEngine(engine.addr, foldref)
+		fold := ensureEngine(engine.addr, C.GoRef(uintptr(*(*unsafe.Pointer)(datap))))
 		return fold.gvalue
 	case C.DTInvalid:
 		return nil
 	case C.DTObject:
 		// TODO Would be good to preserve identity on the Go side. See initGoType as well.
-		obj := CommonOf(*(*unsafe.Pointer)(datap), engine)
+		obj := &Common{
+			engine: engine,
+			addr:   *(*unsafe.Pointer)(datap),
+		}
 		if len(converters) > 0 {
 			// TODO Embed the type name in DataValue to drop these calls.
 			typeName := obj.TypeName()
@@ -235,8 +227,8 @@ func dataTypeOf(typ reflect.Type) C.DataType {
 	return C.DTObject
 }
 
-const typeInfoSize = C.size_t(C.sizeof_GoTypeInfo)
-const memberInfoSize = C.size_t(C.sizeof_GoMemberInfo)
+var typeInfoSize = C.size_t(unsafe.Sizeof(C.GoTypeInfo{}))
+var memberInfoSize = C.size_t(unsafe.Sizeof(C.GoMemberInfo{}))
 
 var typeInfoCache = make(map[reflect.Type]*C.GoTypeInfo)
 
@@ -258,14 +250,6 @@ func appendLoweredName(buf []byte, name string) []byte {
 		lasti, last = i, rune
 	}
 	return append(buf, string(unicode.ToLower(last))...)
-}
-
-func isFieldPrivate(field reflect.StructField) bool {
-	return field.PkgPath != "" || !unicode.IsUpper(rune(field.Name[0]))
-}
-
-func isMethodPrivate(method reflect.Method) bool {
-	return method.PkgPath != ""
 }
 
 func typeInfo(v interface{}) *C.GoTypeInfo {
@@ -303,7 +287,7 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 	namesLen := 0
 	for i := 0; i < numField; i++ {
 		field := vt.Field(i)
-		if isFieldPrivate(field) {
+		if field.PkgPath != "" {
 			privateFields++
 			continue
 		}
@@ -311,7 +295,7 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 	}
 	for i := 0; i < numMethod; i++ {
 		method := vtptr.Method(i)
-		if isMethodPrivate(method) {
+		if method.PkgPath != "" {
 			privateMethods++
 			continue
 		}
@@ -335,16 +319,15 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 	names := make([]byte, 0, namesLen)
 	for i := 0; i < numField; i++ {
 		field := vt.Field(i)
-		if isFieldPrivate(field) {
+		if field.PkgPath != "" {
 			continue // not exported
 		}
-		// fmt.Println("Field: ", field)
 		names = appendLoweredName(names, field.Name)
 		names = append(names, 0)
 	}
 	for i := 0; i < numMethod; i++ {
 		method := vtptr.Method(i)
-		if isMethodPrivate(method) {
+		if method.PkgPath != "" {
 			continue // not exported
 		}
 		if _, ok := getters[method.Name]; !ok {
@@ -355,24 +338,22 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 			continue
 		}
 		// This is a getter method
-		// fmt.Println("Getter: ", method)
 		names = appendLoweredName(names, method.Name)
 		names = append(names, 0)
 	}
 	for i := 0; i < numMethod; i++ {
 		method := vtptr.Method(i)
-		if isMethodPrivate(method) {
+		if method.PkgPath != "" {
 			continue // not exported
 		}
 		if _, ok := getters[method.Name]; ok {
 			continue // getter already handled above
 		}
-		// fmt.Println("Method: ", method)
 		names = appendLoweredName(names, method.Name)
 		names = append(names, 0)
 	}
 	if len(names) != namesLen {
-		panic(fmt.Sprint("pre-allocated buffer size was wrong ", namesLen, len(names), strings.Replace(string(names), "\000", "!", -1)))
+		panic("pre-allocated buffer size was wrong")
 	}
 	typeInfo.memberNames = C.CString(string(names))
 
@@ -384,7 +365,7 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 	mnames := uintptr(unsafe.Pointer(typeInfo.memberNames))
 	for i := 0; i < numField; i++ {
 		field := vt.Field(i)
-		if isFieldPrivate(field) {
+		if field.PkgPath != "" {
 			continue // not exported
 		}
 		memberInfo := (*C.GoMemberInfo)(unsafe.Pointer(members + uintptr(memberInfoSize)*membersi))
@@ -402,7 +383,7 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 	}
 	for i := 0; i < numMethod; i++ {
 		method := vtptr.Method(i)
-		if isMethodPrivate(method) {
+		if method.PkgPath != "" {
 			continue // not exported
 		}
 		if _, ok := getters[method.Name]; !ok {
@@ -420,7 +401,7 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 	}
 	for i := 0; i < numMethod; i++ {
 		method := vtptr.Method(i)
-		if isMethodPrivate(method) {
+		if method.PkgPath != "" {
 			continue // not exported
 		}
 		if _, ok := getters[method.Name]; ok {
@@ -444,7 +425,7 @@ func typeInfo(v interface{}) *C.GoTypeInfo {
 		membersi += 1
 		mnamesi += uintptr(len(method.Name)) + 1
 
-		if method.Name == "Paint" && memberInfo.numIn == 2 && memberInfo.numOut == 0 && method.Type.In(1) == typeObject && method.Type.In(2) == typePainter {
+		if method.Name == "Paint" && memberInfo.numIn == 1 && memberInfo.numOut == 0 && method.Type.In(1) == typePainter {
 			typeInfo.paint = memberInfo
 		}
 	}
@@ -500,4 +481,50 @@ func methodQtSignature(method reflect.Method) (signature, result string) {
 		result = "QVariantList"
 	}
 	return
+}
+
+func hashable(value interface{}) (hashable bool) {
+	defer func() { recover() }()
+	return value == value
+}
+
+// unsafeString returns a Go string backed by C data.
+//
+// If the C data is deallocated or moved, the string will be
+// invalid and will crash the program if used. As such, the
+// resulting string must only be used inside the implementation
+// of the qml package and while the life time of the C data
+// is guaranteed.
+func unsafeString(data *C.char, size C.int) string {
+	var s string
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	sh.Data = uintptr(unsafe.Pointer(data))
+	sh.Len = int(size)
+	return s
+}
+
+// unsafeStringData returns a C string backed by Go data. The C
+// string is NOT null-terminated, so its length must be taken
+// into account.
+//
+// If the s Go string is garbage collected, the returned C data
+// will be invalid and will crash the program if used. As such,
+// the resulting data must only be used inside the implementation
+// of the qml package and while the life time of the Go string
+// is guaranteed.
+func unsafeStringData(s string) (*C.char, C.int) {
+	return *(**C.char)(unsafe.Pointer(&s)), C.int(len(s))
+}
+
+// unsafeBytesData returns a C string backed by Go data. The C
+// string is NOT null-terminated, so its length must be taken
+// into account.
+//
+// If the array backing the b Go slice is garbage collected, the
+// returned C data will be invalid and will crash the program if
+// used. As such, the resulting data must only be used inside the
+// implementation of the qml package and while the life time of
+// the Go array is guaranteed.
+func unsafeBytesData(b []byte) (*C.char, C.int) {
+	return *(**C.char)(unsafe.Pointer(&b)), C.int(len(b))
 }

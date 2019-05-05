@@ -2,10 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/nanu-c/qml-go"
 	"image/png"
 	"os"
-
-	"github.com/nanu-c/qml-go"
 )
 
 const webview = `

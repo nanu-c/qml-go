@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/nanu-c/qml-go"
 	"github.com/nanu-c/qml-go/gl/2.0"
-	"github.com/nanu-c/qml-go/qpainter"
+	"os"
 )
 
 var filename = "gopher.qml"
@@ -62,7 +60,7 @@ func (r *Gopher) SetRotation(rotation int) {
 	r.Call("update")
 }
 
-func (r *Gopher) Paint(obj qml.Object, p *qpainter.Painter) {
+func (r *Gopher) Paint(p *qml.Painter) {
 	gl := GL.API(p)
 
 	width := float32(r.Int("width"))

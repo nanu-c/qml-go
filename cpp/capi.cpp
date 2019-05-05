@@ -1,10 +1,10 @@
-#include <QApplication>
-#include <QGuiApplication>
-#include <QQuickView>
-#include <QQuickItem>
-#include <QtQml>
-#include <QDebug>
-#include <QQuickImageProvider>
+#include <QtWidgets/QApplication>
+#include <QtQuick/QQuickView>
+#include <QtQuick/QQuickItem>
+#include <QtQml/QtQml>
+#include <QtCore/QDebug>
+#include <QtQuick/QQuickImageProvider>
+#include <QtGui/QIcon>
 
 #include <string.h>
 
@@ -12,7 +12,6 @@
 #include "govaluetype.h"
 #include "connector.h"
 #include "capi.h"
-#include "goitemmodel.h"
 
 static char *local_strdup(const char *str)
 {
@@ -45,21 +44,16 @@ void panicf(const char *format, ...)
     hookPanic(local_strdup(ba.constData()));
 }
 
-void newGuiApplication(int argc, char **argv)
+void newGuiApplication()
 {
-    // if empty is {0} then WM_CLASS is never set due to some crappy logic
-    // in QXcbIntegration::wmClass()
-    static char empty[4] = {'q', 'm', 'l', 0};
-    static char *argv_[] = {empty, 0};
-    static int argc_ = 1;
-    // and, if we use argc and argv, it crashes about
-    // 3/4 of the time with std::bad_alloc()
-    new QApplication(argc_, argv_);
+    static char empty[1] = {0};
+    static char *argv[] = {empty, 0};
+    static int argc = 1;
+    new QApplication(argc, argv);
 
     // The event loop should never die.
     qApp->setQuitOnLastWindowClosed(false);
 }
-
 
 void applicationExec()
 {
@@ -74,6 +68,12 @@ void applicationExit()
 void applicationFlushAll()
 {
     qApp->processEvents();
+}
+
+void setWindowIcon(QString_ *path){
+	QString *str = reinterpret_cast<QString *>(path);
+	QIcon icon(*str);
+	qApp->setWindowIcon(icon);
 }
 
 void *currentThread()
@@ -172,69 +172,11 @@ void coreAddLibraryPath(const char *path, int pathLen)
     QCoreApplication::addLibraryPath(qslibraryPath);
 }
 
-void coreSetApplicationName(const char *path, int pathLen)
-{
-    QByteArray qappName(path, pathLen);
-    QString qsappName = QString::fromUtf8(qappName);
-
-    QCoreApplication::setApplicationName(qsappName);
-}
-
-void coreSetApplicationVersion(const char *path, int pathLen)
-{
-    QByteArray qappVersion(path, pathLen);
-    QString qsappVersion = QString::fromUtf8(qappVersion);
-
-    QCoreApplication::setApplicationVersion(qsappVersion);
-}
-
-void coreSetOrganizationDomain(const char *path, int pathLen)
-{
-    QByteArray qorgDomain(path, pathLen);
-    QString qsorgDomain = QString::fromUtf8(qorgDomain);
-
-    QCoreApplication::setOrganizationDomain(qsorgDomain);
-}
-
-void coreSetOrganizationName(const char *path, int pathLen)
-{
-    QByteArray qorgName(path, pathLen);
-    QString qsorgName = QString::fromUtf8(qorgName);
-
-    QCoreApplication::setOrganizationName(qsorgName);
-}
-
-
-void guiappSetApplicationDisplayName(const char *path, int pathLen)
-{
-    QByteArray qappDispName(path, pathLen);
-    QString qsappDispName = QString::fromUtf8(qappDispName);
-
-    QGuiApplication::setApplicationDisplayName(qsappDispName);
-}
-// Added in Qt 5.7
-// void guiappSetDesktopFileName(const char *path, int pathLen)
-// {
-//     QByteArray qfileName(path, pathLen);
-//     QString qsfileName = QString::fromUtf8(qfileName);
-//
-//     QGuiApplication::setDesktopFileName(qsfileName);
-// }
-void guiappSetWindowIcon(const char *path, int pathLen)
-{
-    QByteArray qiconPath(path, pathLen);
-    QString qsiconPath = QString::fromUtf8(qiconPath);
-
-    QIcon icon(qsiconPath);
-
-    QApplication::setWindowIcon(icon);
-}
-
 QQmlComponent_ *newComponent(QQmlEngine_ *engine, QObject_ *parent)
 {
     QQmlEngine *qengine = reinterpret_cast<QQmlEngine *>(engine);
-    QObject *qparent = reinterpret_cast<QObject *>(parent);
-    QQmlComponent *qcomponent = new QQmlComponent(qengine, qparent);
+    //QObject *qparent = reinterpret_cast<QObject *>(parent);
+    QQmlComponent *qcomponent = new QQmlComponent(qengine);
     // Qt 5.2.0 returns NULL on qmlEngine(qcomponent) without this.
     QQmlEngine::setContextForObject(qcomponent, qengine->rootContext());
     return qcomponent;
@@ -555,7 +497,7 @@ error *objectInvoke(QObject_ *object, const char *method, int methodLen, DataVal
     }
 
     if (qobject == 0) {
-        return errorf("method called on null object: %s", method);
+      return errorf("method called on null object: %s", method);
     }
 
     const QMetaObject *metaObject = qobject->metaObject();
@@ -613,7 +555,7 @@ void objectSetParent(QObject_ *object, QObject_ *parent)
     qobject->setParent(qparent);
 }
 
-error *objectConnect(QObject_ *object, const char *signal, int signalLen, QQmlEngine_ *engine, GoValueRef func, int argsLen)
+error *objectConnect(QObject_ *object, const char *signal, int signalLen, QQmlEngine_ *engine, GoRef func, int argsLen)
 {
     QObject *qobject = reinterpret_cast<QObject *>(object);
     QQmlEngine *qengine = reinterpret_cast<QQmlEngine *>(engine);
@@ -641,14 +583,6 @@ error *objectConnect(QObject_ *object, const char *signal, int signalLen, QQmlEn
     return errorf("object does not expose a \"%s\" signal", qsignal.data());
 }
 
-error *objectDisconnect(QObject_ *object)
-{
-    const QObject *qobject = reinterpret_cast<QObject *>(object);
-    if (!qobject->disconnect())
-        return errorf("failed to disconnect signals");
-    return 0;
-}
-
 QQmlContext_ *objectContext(QObject_ *object)
 {
     return qmlContext(static_cast<QObject *>(object));
@@ -657,32 +591,32 @@ QQmlContext_ *objectContext(QObject_ *object)
 int objectIsComponent(QObject_ *object)
 {
     QObject *qobject = static_cast<QObject *>(object);
-    return dynamic_cast<QQmlComponent *>(qobject) ? 1 : 0;
+    return qobject->inherits("QQmlComponent") ? 1 : 0;
 }
 
 int objectIsWindow(QObject_ *object)
 {
     QObject *qobject = static_cast<QObject *>(object);
-    return dynamic_cast<QQuickWindow *>(qobject) ? 1 : 0;
+    return qobject->inherits("QQuickWindow") ? 1 : 0;
 }
 
 int objectIsView(QObject_ *object)
 {
     QObject *qobject = static_cast<QObject *>(object);
-    return dynamic_cast<QQuickView *>(qobject) ? 1 : 0;
+    return qobject->inherits("QQuickView") ? 1 : 0;
 }
 
-error *objectGoAddr(QObject_ *object, GoValueRef *addr)
+error *objectGoRef(QObject_ *object, GoRef *ref)
 {
     QObject *qobject = static_cast<QObject *>(object);
-    GoValue *goValue = dynamic_cast<GoValue *>(qobject);
-    if (goValue) {
-        *addr = goValue->valueref;
+    if (qobject->inherits("GoValue")) {
+        GoValue *goValue = static_cast<GoValue *>(qobject);
+        *ref = goValue->ref;
         return 0;
     }
-    GoPaintedValue *goPaintedValue = dynamic_cast<GoPaintedValue *>(qobject);
-    if (goPaintedValue) {
-        *addr = goPaintedValue->valueref;
+    if (qobject->inherits("GoPaintedValue")) {
+        GoPaintedValue *goPaintedValue = static_cast<GoPaintedValue *>(qobject);
+        *ref = goPaintedValue->ref;
         return 0;
     }
     return errorf("QML object is not backed by a Go value");
@@ -700,13 +634,13 @@ void delString(QString_ *s)
     delete reinterpret_cast<QString *>(s);
 }
 
-GoValue_ *newGoValue(GoValueRef valueref, GoTypeInfo *typeInfo, QObject_ *parent)
+GoValue_ *newGoValue(GoRef ref, GoTypeInfo *typeInfo, QObject_ *parent)
 {
     QObject *qparent = reinterpret_cast<QObject *>(parent);
     if (typeInfo->paint) {
-        return new GoPaintedValue(valueref, typeInfo, qparent);
+        return new GoPaintedValue(ref, typeInfo, qparent);
     }
-    return new GoValue(valueref, typeInfo, qparent);
+    return new GoValue(ref, typeInfo, qparent);
 }
 
 void goValueActivate(GoValue_ *value, GoTypeInfo *typeInfo, int addrOffset)
@@ -762,17 +696,14 @@ void unpackDataValue(DataValue *value, QVariant_ *var)
         *qvar = **(QVariantList**)(value->data);
         delete *(QVariantList**)(value->data);
         break;
-    case DTItemModel:
-        qvar->setValue(*(GoItemModel**)(value->data));
-        break;
     case DTObject:
         qvar->setValue(*(QObject**)(value->data));
         break;
-    case DTNil:
-        *qvar = QVariant(QMetaType::VoidStar, (void *)0);
-        break;
     case DTInvalid:
-        *qvar = QVariant(QMetaType::VoidStar, (void *)0);
+        // null would be more natural, but an invalid variant means
+        // it has proper semantics when dealing with non-qml qt code.
+        //qvar->setValue(QJSValue(QJSValue::NullValue));
+        qvar->clear();
         break;
     default:
         panicf("unknown data type: %d", value->dataType);
@@ -780,9 +711,9 @@ void unpackDataValue(DataValue *value, QVariant_ *var)
     }
 }
 
-void packDataValue(const QVariant_ *var, DataValue *value)
+void packDataValue(QVariant_ *var, DataValue *value)
 {
-    QVariant *qvar = reinterpret_cast<QVariant *>(const_cast<QVariant_ *>(var));
+    QVariant *qvar = reinterpret_cast<QVariant *>(var);
 
     // Some assumptions are made below regarding the size of types.
     // There's apparently no better way to handle this since that's
@@ -828,8 +759,6 @@ void packDataValue(const QVariant_ *var, DataValue *value)
     case QMetaType::VoidStar:
         value->dataType = DTUintptr;
         *(uintptr_t*)(value->data) = (uintptr_t)qvar->value<void *>();
-        if (*(uintptr_t*)(value->data) == 0)
-          value->dataType = DTNil;
         break;
     case QMetaType::Double:
         value->dataType = DTFloat64;
@@ -876,52 +805,27 @@ void packDataValue(const QVariant_ *var, DataValue *value)
             value->len = len;
             *(DataValue**)(value->data) = dvlist;
         }
-    break;
+        break;
     case QMetaType::User:
-    {
-        static const int qjstype = QVariant::fromValue(QJSValue()).userType();
-        if (qvar->userType() == qjstype) {
-            auto var = qvar->value<QJSValue>().toVariant();
-            packDataValue(&var, value);
-            break;
-        }
-
-        static const int qlisturltype = qMetaTypeId<QList<QUrl>>();
-        if (qvar->userType() == qlisturltype) {
-            auto list = qvar->value<QList<QUrl>>();
-            int len = list.size();
-            DataValue *dvlist = (DataValue *) malloc(sizeof(DataValue) * len);
-            QVariant elem;
-            for (int i = 0; i < len; i++) {
-                elem.setValue(list.at(i));
-                packDataValue(&elem, &dvlist[i]);
+        {
+            static const int qjstype = QVariant::fromValue(QJSValue()).userType();
+            if (qvar->userType() == qjstype) {
+                auto var = qvar->value<QJSValue>().toVariant();
+                packDataValue(&var, value);
             }
-
-            value->dataType = DTValueList;
-            value->len = len;
-            *(DataValue**)(value->data) = dvlist;
-            break;
         }
-    }
+        break;
     default:
         if (qvar->type() == (int)QMetaType::QObjectStar || qvar->canConvert<QObject *>()) {
             QObject *qobject = qvar->value<QObject *>();
-            GoValue *goValue = dynamic_cast<GoValue *>(qobject);
-            if (goValue) {
+            if (qobject->inherits("GoValue")) {
                 value->dataType = DTGoAddr;
-                *(GoValueRef *)(value->data) = goValue->valueref;
+                *(uintptr_t*)(value->data) = (static_cast<GoValue*>(qobject))->ref;
                 break;
             }
-            GoPaintedValue *goPaintedValue = dynamic_cast<GoPaintedValue *>(qobject);
-            if (goPaintedValue) {
+            if (qobject->inherits("GoPaintedValue")) {
                 value->dataType = DTGoAddr;
-                *(GoValueRef *)(value->data) = goPaintedValue->valueref;
-                break;
-            }
-            GoItemModel *goItemModel = dynamic_cast<GoItemModel *>(qobject);
-            if (goItemModel) {
-                value->dataType = DTGoAddr;
-                *(GoValueRef *)(value->data) = goItemModel->valueref;
+                *(uintptr_t*)(value->data) = (static_cast<GoPaintedValue*>(qobject))->ref;
                 break;
             }
             value->dataType = DTObject;
@@ -979,28 +883,28 @@ QVariantList_ *newVariantList(DataValue *list, int len)
 
 QObject *listPropertyAt(QQmlListProperty<QObject> *list, int i)
 {
-    return reinterpret_cast<QObject *>(hookListPropertyAt((GoValueRef)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2, i));
+    return reinterpret_cast<QObject *>(hookListPropertyAt((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2, i));
 }
 
 int listPropertyCount(QQmlListProperty<QObject> *list)
 {
-    return hookListPropertyCount((GoValueRef)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2);
+    return hookListPropertyCount((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2);
 }
 
 void listPropertyAppend(QQmlListProperty<QObject> *list, QObject *obj)
 {
-    hookListPropertyAppend((GoValueRef)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2, obj);
+    hookListPropertyAppend((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2, obj);
 }
 
 void listPropertyClear(QQmlListProperty<QObject> *list)
 {
-    hookListPropertyClear((GoValueRef)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2);
+    hookListPropertyClear((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2);
 }
 
-QQmlListProperty_ *newListProperty(GoValueRef valueref, intptr_t reflectIndex, intptr_t setIndex)
+QQmlListProperty_ *newListProperty(GoRef ref, intptr_t reflectIndex, intptr_t setIndex)
 {
     QQmlListProperty<QObject> *list = new QQmlListProperty<QObject>();
-    list->data = (void*)valueref;
+    list->data = (void*)ref;
     list->dummy1 = (void*)reflectIndex;
     list->dummy2 = (void*)setIndex;
     list->at = listPropertyAt;
