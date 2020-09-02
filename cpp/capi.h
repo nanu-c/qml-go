@@ -65,8 +65,10 @@ typedef enum {
 
 typedef struct {
     DataType dataType;
+    char _pad0[4];
     char data[8];
     int len;
+    char _pad1[4];
 } DataValue;
 
 typedef struct {
