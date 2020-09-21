@@ -28,7 +28,7 @@ error *errorf(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
-    QString str = QString().vsprintf(format, ap);
+    QString str = QString().vasprintf(format, ap);
     va_end(ap);
     QByteArray ba = str.toUtf8();
     return local_strdup(ba.constData());
@@ -38,7 +38,7 @@ void panicf(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
-    QString str = QString().vsprintf(format, ap);
+    QString str = QString().vasprintf(format, ap);
     va_end(ap);
     QByteArray ba = str.toUtf8();
     hookPanic(local_strdup(ba.constData()));
@@ -883,30 +883,32 @@ QVariantList_ *newVariantList(DataValue *list, int len)
 
 QObject *listPropertyAt(QQmlListProperty<QObject> *list, int i)
 {
-    return reinterpret_cast<QObject *>(hookListPropertyAt((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2, i));
+    void** data = (void**)list->data;
+    return reinterpret_cast<QObject *>(hookListPropertyAt((uintptr_t)data[0], (intptr_t)data[1], (intptr_t)data[2], i));
 }
 
 int listPropertyCount(QQmlListProperty<QObject> *list)
 {
-    return hookListPropertyCount((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2);
+    void** data = (void**)list->data;
+    return hookListPropertyCount((uintptr_t)data[0], (intptr_t)data[1], (intptr_t)data[2]);
 }
 
 void listPropertyAppend(QQmlListProperty<QObject> *list, QObject *obj)
 {
-    hookListPropertyAppend((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2, obj);
+    void** data = (void**)list->data;
+    hookListPropertyAppend((uintptr_t)data[0], (intptr_t)data[1], (intptr_t)data[2], obj);
 }
 
 void listPropertyClear(QQmlListProperty<QObject> *list)
 {
-    hookListPropertyClear((uintptr_t)list->data, (intptr_t)list->dummy1, (intptr_t)list->dummy2);
+    void** data = (void**)list->data;
+    hookListPropertyClear((uintptr_t)data[0], (intptr_t)data[1], (intptr_t)data[2]);
 }
 
 QQmlListProperty_ *newListProperty(GoRef ref, intptr_t reflectIndex, intptr_t setIndex)
 {
     QQmlListProperty<QObject> *list = new QQmlListProperty<QObject>();
-    list->data = (void*)ref;
-    list->dummy1 = (void*)reflectIndex;
-    list->dummy2 = (void*)setIndex;
+    list->data = new void*[3] { (void*)ref, (void*)reflectIndex, (void*)setIndex };
     list->at = listPropertyAt;
     list->count = listPropertyCount;
     list->append = listPropertyAppend;
