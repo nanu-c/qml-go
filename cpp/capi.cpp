@@ -5,6 +5,9 @@
 #include <QtCore/QDebug>
 #include <QtQuick/QQuickImageProvider>
 #include <QtGui/QIcon>
+#include <QQmlApplicationEngine>
+#include <QTranslator>
+#include <QLocale>
 
 #include <string.h>
 
@@ -86,6 +89,53 @@ void *appThread()
     return QCoreApplication::instance()->thread();
 }
 
+void coreLoadTranslatorCurrentLocale(const char *filename, int filenameLen, const char *prefix, int prefixLen, const char *directory, int directoryLen, const char *suffix, int suffixLen)
+{
+    QByteArray qFilename(filename, filenameLen);
+    QString qsFilename = QString::fromUtf8(qFilename);
+
+    QByteArray qPrefix(prefix, prefixLen);
+    QString qsPrefix = QString::fromUtf8(qPrefix);
+
+    QByteArray qDirectory(directory, directoryLen);
+    QString qsDirectory = QString::fromUtf8(qDirectory);
+
+    QByteArray qSuffix(suffix, suffixLen);
+    QString qsSuffix = QString::fromUtf8(qSuffix);
+
+    QTranslator *translator = new QTranslator();
+    if (translator->load(QLocale(), qsFilename, qsPrefix, qsDirectory, qsSuffix)) {
+        QCoreApplication::installTranslator(translator);
+        return;
+    }
+    panicf("translation not loaded");
+}
+
+void coreLoadTranslator(const char *locale, int localeLen, const char *filename, int filenameLen, const char *prefix, int prefixLen, const char *directory, int directoryLen, const char *suffix, int suffixLen)
+{
+    QByteArray qLocale(locale, localeLen);
+    QString qsLocale = QString::fromUtf8(qLocale);
+
+    QByteArray qFilename(filename, filenameLen);
+    QString qsFilename = QString::fromUtf8(qFilename);
+
+    QByteArray qPrefix(prefix, prefixLen);
+    QString qsPrefix = QString::fromUtf8(qPrefix);
+
+    QByteArray qDirectory(directory, directoryLen);
+    QString qsDirectory = QString::fromUtf8(qDirectory);
+
+    QByteArray qSuffix(suffix, suffixLen);
+    QString qsSuffix = QString::fromUtf8(qSuffix);
+
+    QTranslator *translator = new QTranslator();
+    if (translator->load(QLocale(qsLocale), qsFilename, qsPrefix, qsDirectory, qsSuffix)) {
+        QCoreApplication::installTranslator(translator);
+        return;
+    }
+    panicf("translation not loaded");
+}
+
 QQmlEngine_ *newEngine(QObject_ *parent)
 {
     return new QQmlEngine(reinterpret_cast<QObject *>(parent));
@@ -94,6 +144,13 @@ QQmlEngine_ *newEngine(QObject_ *parent)
 QQmlContext_ *engineRootContext(QQmlEngine_ *engine)
 {
     return reinterpret_cast<QQmlEngine *>(engine)->rootContext();
+}
+
+void engineRetranslate(QQmlEngine_ *engine)
+{
+    QQmlEngine *qengine = reinterpret_cast<QQmlEngine *>(engine);
+
+    qengine->retranslate();
 }
 
 void engineSetContextForObject(QQmlEngine_ *engine, QObject_ *object)

@@ -34,6 +34,38 @@ type Engine struct {
 
 var engines = make(map[unsafe.Pointer]*Engine)
 
+// LoadTranslatorCurrentLocale load and install a QTranslator in QCoreApplication::instance
+// Use QLocale() to load the current user locale
+// see LoadTranslator if you want to specify specific QLocale
+// see QTranslator::load() https://doc.qt.io/qt-5/qtranslator.html#load-1 for more details on parameters
+// don't forget to call engine.Retranslate() if you do it runtime
+func LoadTranslatorCurrentLocale(filename string, prefix string, directory string, suffix string) error {
+	cfilename, cfilenamelen := unsafeStringData(filename)
+	cprefix, cprefixlen := unsafeStringData(prefix)
+	cdirectory, cdirectorylen := unsafeStringData(directory)
+	csuffix, csuffixlen := unsafeStringData(suffix)
+	RunMain(func() {
+		C.coreLoadTranslatorCurrentLocale(cfilename, cfilenamelen, cprefix, cprefixlen, cdirectory, cdirectorylen, csuffix, csuffixlen)
+	})
+	return nil
+}
+
+// LoadTranslatorCurrentLocale load and install a QTranslator in QCoreApplication::instance
+// Use QLocale("locale") to load locale
+// see QTranslator::load() https://doc.qt.io/qt-5/qtranslator.html#load-1 for more details on parameters
+// don't forget to call engine.Retranslate() if you do it runtime
+func LoadTranslator(locale string, filename string, prefix string, directory string, suffix string) error {
+	clocale, clocalelen := unsafeStringData(locale)
+	cfilename, cfilenamelen := unsafeStringData(filename)
+	cprefix, cprefixlen := unsafeStringData(prefix)
+	cdirectory, cdirectorylen := unsafeStringData(directory)
+	csuffix, csuffixlen := unsafeStringData(suffix)
+	RunMain(func() {
+		C.coreLoadTranslator(clocale, clocalelen, cfilename, cfilenamelen, cprefix, cprefixlen, cdirectory, cdirectorylen, csuffix, csuffixlen)
+	})
+	return nil
+}
+
 // NewEngine returns a new QML engine.
 //
 // The Destory method must be called to finalize the engine and
@@ -76,6 +108,12 @@ func (e *Engine) Destroy() {
 			}
 		})
 	}
+}
+
+func (e *Engine) Retranslate() {
+	RunMain(func() {
+		C.engineRetranslate(e.addr)
+	})
 }
 
 // Load loads a new component with the provided location and with the

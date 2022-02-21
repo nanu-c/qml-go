@@ -120,8 +120,11 @@ void idleTimerStart();
 void *currentThread();
 void *appThread();
 
+void coreLoadTranslatorCurrentLocale(const char *filename, int filenameLen, const char *prefix, int prefixLen, const char *directory, int directoryLen, const char *suffix, int suffixLen);
+void coreLoadTranslator(const char *locale, int localeLen, const char *filename, int filenameLen, const char *prefix, int prefixLen, const char *directory, int directoryLen, const char *suffix, int suffixLen);
 QQmlEngine_ *newEngine(QObject_ *parent);
 QQmlContext_ *engineRootContext(QQmlEngine_ *engine);
+void engineRetranslate(QQmlEngine_ *engine);
 void engineSetOwnershipCPP(QQmlEngine_ *engine, QObject_ *object);
 void engineSetOwnershipJS(QQmlEngine_ *engine, QObject_ *object);
 void engineSetContextForObject(QQmlEngine_ *engine, QObject_ *object);
