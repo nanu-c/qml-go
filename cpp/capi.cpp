@@ -5,7 +5,6 @@
 #include <QtCore/QDebug>
 #include <QtQuick/QQuickImageProvider>
 #include <QtGui/QIcon>
-#include <QQmlApplicationEngine>
 #include <QTranslator>
 #include <QLocale>
 
@@ -106,9 +105,7 @@ void coreLoadTranslatorCurrentLocale(const char *filename, int filenameLen, cons
     QTranslator *translator = new QTranslator();
     if (translator->load(QLocale(), qsFilename, qsPrefix, qsDirectory, qsSuffix)) {
         QCoreApplication::installTranslator(translator);
-        return;
     }
-    panicf("translation not loaded");
 }
 
 void coreLoadTranslator(const char *locale, int localeLen, const char *filename, int filenameLen, const char *prefix, int prefixLen, const char *directory, int directoryLen, const char *suffix, int suffixLen)
@@ -131,9 +128,7 @@ void coreLoadTranslator(const char *locale, int localeLen, const char *filename,
     QTranslator *translator = new QTranslator();
     if (translator->load(QLocale(qsLocale), qsFilename, qsPrefix, qsDirectory, qsSuffix)) {
         QCoreApplication::installTranslator(translator);
-        return;
     }
-    panicf("translation not loaded");
 }
 
 QQmlEngine_ *newEngine(QObject_ *parent)
