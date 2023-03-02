@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"runtime"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/nanu-c/qml-go/cdata"
@@ -71,15 +72,22 @@ func Run(f func() error) error {
 func RunMain(f func()) {
 	ref := cdata.Ref()
 	if ref == guiMainRef || ref == atomic.LoadInt64(&guiPaintRef) {
+		fmt.Println("IN ROOT")
 		// Already within the GUI or render threads. Attempting to wait would deadlock.
 		f()
 		return
 	}
 
+	fmt.Println("guiIdleRun", guiIdleRun)
+
 	// Tell Qt we're waiting for the idle hook to be called.
 	if atomic.AddInt32(&guiIdleRun, 1) == 1 {
 		C.idleTimerStart()
 	}
+
+	fmt.Println("guiIdleRun", guiIdleRun)
+
+	fmt.Println("SENT F TO IDLE")
 
 	// Send f to be executed by the idle hook in the main GUI thread.
 	guiFunc <- f
@@ -129,8 +137,7 @@ func Flush() {
 //
 // For example:
 //
-//     qml.Changed(&value, &value.Field)
-//
+//	qml.Changed(&value, &value.Field)
 func Changed(value, fieldAddr interface{}) {
 	valuev := reflect.ValueOf(value)
 	fieldv := reflect.ValueOf(fieldAddr)
@@ -176,20 +183,31 @@ func Changed(value, fieldAddr interface{}) {
 //
 //export hookIdleTimer
 func hookIdleTimer() {
+	println("!! hookIdleTimer ---------->")
 	var f func()
+	var waitingCycle = 0
 	for {
 		select {
 		case f = <-guiFunc:
 		default:
 			if guiLock > 0 {
+				fmt.Println("!! guilock > 0 BLOCK !!")
 				f = <-guiFunc
-			} else {
+				fmt.Println("!! guilock > 0 AFTER !!")
+			} else if waitingCycle > 5 {
+				fmt.Println("!! guilock == 0 shutdown hookIdeTimer !!")
 				return
+			} else {
+				fmt.Println("!! WAITING !!")
+				waitingCycle++
+				time.Sleep(100 * time.Millisecond)
+				continue
 			}
 		}
 		f()
 		guiDone <- struct{}{}
 		atomic.AddInt32(&guiIdleRun, -1)
+		println("!! hookIdleTimer <----------")
 	}
 }
 
