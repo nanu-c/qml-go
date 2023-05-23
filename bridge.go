@@ -184,11 +184,11 @@ func hookIdleTimer() {
 		default:
 			if guiLock > 0 {
 				f = <-guiFunc
-			} else if waitingCycle > 5 {
+			} else if waitingCycle > 0 {
 				return
 			} else {
 				waitingCycle++
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 				continue
 			}
 		}
