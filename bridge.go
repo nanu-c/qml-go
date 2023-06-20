@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"runtime"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/nanu-c/qml-go/cdata"
@@ -129,8 +130,7 @@ func Flush() {
 //
 // For example:
 //
-//     qml.Changed(&value, &value.Field)
-//
+//	qml.Changed(&value, &value.Field)
 func Changed(value, fieldAddr interface{}) {
 	valuev := reflect.ValueOf(value)
 	fieldv := reflect.ValueOf(fieldAddr)
@@ -177,14 +177,19 @@ func Changed(value, fieldAddr interface{}) {
 //export hookIdleTimer
 func hookIdleTimer() {
 	var f func()
+	var waitingCycle = 0
 	for {
 		select {
 		case f = <-guiFunc:
 		default:
 			if guiLock > 0 {
 				f = <-guiFunc
-			} else {
+			} else if waitingCycle > 0 {
 				return
+			} else {
+				waitingCycle++
+				time.Sleep(10 * time.Millisecond)
+				continue
 			}
 		}
 		f()
