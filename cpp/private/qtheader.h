@@ -77,6 +77,36 @@
 #define QT_MICRO 9
 #elif QT_MICRO_ == 10
 #define QT_MICRO 10
+#elif QT_MICRO_ == 11
+#define QT_MICRO 11
+#elif QT_MICRO_ == 12
+#define QT_MICRO 12
+#elif QT_MICRO_ == 13
+#define QT_MICRO 13
+#elif QT_MICRO_ == 14
+#define QT_MICRO 14
+#elif QT_MICRO_ == 15
+#define QT_MICRO 15
+#elif QT_MICRO_ == 16
+#define QT_MICRO 16
+#elif QT_MICRO_ == 17
+#define QT_MICRO 17
+#elif QT_MICRO_ == 18
+#define QT_MICRO 18
+#elif QT_MICRO_ == 19
+#define QT_MICRO 19
+#elif QT_MICRO_ == 20
+#define QT_MICRO 20
+#elif QT_MICRO_ == 21
+#define QT_MICRO 21
+#elif QT_MICRO_ == 22
+#define QT_MICRO 22
+#elif QT_MICRO_ == 23
+#define QT_MICRO 23
+#elif QT_MICRO_ == 24
+#define QT_MICRO 24
+#elif QT_MICRO_ == 25
+#define QT_MICRO 25
 #else 
 #error Unupported Qt micro version. Please report.
 #endif
